@@ -1,0 +1,8 @@
+[package]
+name = "RusticRaytracer"
+version = "0.1.0"
+authors = ["Bjørn Grønbæk <github@gronbaek.net>"]
+edition = "2018"
+
+[dependencies]
+euclid = "0.19.5"
