@@ -40,6 +40,26 @@ mod tests {
     }
 
     #[test]
+    pub fn test_floating_intersection_on_x_axis(){
+        let sphere = super::Sphere::new(5.0, 1.0, 0.0, 2.0);
+        let origin = Vector3D::new(0.0, 0.0, 0.0);
+        let direction = Vector3D::new(1.0,0.0,0.0);
+        let intersection = sphere.intersects(origin,direction);
+        assert_eq!(intersection.is_ok(),true);
+        assert_eq!(intersection.unwrap().x.round(),3.0);
+    }
+
+    #[test]
+    pub fn test_simple_intersection_on_y_axis(){
+        let sphere = super::Sphere::new(0.0, 5.0, 0.0, 2.0);
+        let origin = Vector3D::new(0.0, 0.0, 0.0);
+        let direction = Vector3D::new(0.0,1.0,0.0);
+        let intersection = sphere.intersects(origin,direction);
+        assert_eq!(intersection.is_ok(),true);
+        assert_eq!(intersection.unwrap(),Vector3D::new(0.0, 3.0, 0.0));
+    }
+
+    #[test]
     pub fn test_euclid_mul(){
         let v3: Vector3D<i32,> = vec3(5, 10, 15);
         let v3scaled = v3 * 4;
