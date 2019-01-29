@@ -40,6 +40,16 @@ mod tests {
     }
 
     #[test]
+    pub fn test_simple_intersection_on_x_axis_with_longer_direction(){
+        let sphere = super::Sphere::new(5.0, 0.0, 0.0, 2.0);
+        let origin = Vector3D::new(0.0, 0.0, 0.0);
+        let direction = Vector3D::new(5.0,0.0,0.0);
+        let intersection = sphere.intersects(origin,direction);
+        assert_eq!(intersection.is_ok(),true);
+        assert_eq!(intersection.unwrap(),Vector3D::new(3.0, 0.0, 0.0));
+    }
+
+    #[test]
     pub fn test_floating_intersection_on_x_axis(){
         let sphere = super::Sphere::new(5.0, 1.0, 0.0, 2.0);
         let origin = Vector3D::new(0.0, 0.0, 0.0);
@@ -83,6 +93,7 @@ impl Sphere{
     }
 
     pub fn intersects(&self, origin: Vector3D<f32>, direction: Vector3D<f32>) -> Result<Vector3D<f32>,&str> {
+        let direction = direction.normalize();
         let vpc = dbg!(self.center - origin); //vector v from the orgin p to the center c
 
         let t = dbg!(vpc.dot(direction));
@@ -98,14 +109,15 @@ impl Sphere{
             }
             else{
                 let dist = (self.radius.powi(2) - (pc - self.center).length().powi(2)).sqrt();
+                let di1;
                 if vpc.length() > self.radius {
-                    let di1 = (pc - origin).length() - dist;
-                    intersection = origin + direction * di1;
+                    di1 = dbg!((pc - origin).length() - dist);
+                    
                 }
                 else {
-                    let di1 = (pc - origin).length() + dist;
-                    intersection = origin + direction * di1;
+                    di1 = dbg!((pc - origin).length() + dist);
                 }
+                intersection = dbg!(origin + direction * di1);
             }
 
             dbg!(Ok(intersection))
