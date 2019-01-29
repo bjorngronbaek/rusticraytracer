@@ -77,6 +77,7 @@ mod tests {
     }
 }
 
+extern crate euclid;
 use euclid::*;
 
 pub struct Sphere{
@@ -93,11 +94,19 @@ impl Sphere{
     }
 
     pub fn intersects(&self, origin: Vector3D<f32>, direction: Vector3D<f32>) -> Result<Vector3D<f32>,&str> {
+        //normalize the direction vector, i.e. make the magnitude = 1
         let direction = direction.normalize();
-        let vpc = dbg!(self.center - origin); //vector v from the orgin p to the center c
 
+        //vector v from the orgin p to the center c
+        let vpc = dbg!(self.center - origin); 
+
+        //the distance from the origin to the right angled line
+        //intersection the center of the sphere
         let t = dbg!(vpc.dot(direction));
+
         if t <= 0.0 {
+            //if true, the origin is either inside the sphere, or directly
+            //on the edge, and is therefor not visible
             return Err("No intersection");
         }        
         else {
