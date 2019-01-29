@@ -80,6 +80,7 @@ mod tests {
 extern crate euclid;
 use euclid::*;
 
+#[derive(Debug)]
 pub struct Sphere{
     center: Vector3D<f32>,
     radius: f32,
