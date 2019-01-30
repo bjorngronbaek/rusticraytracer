@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use euclid::*;
+    use crate::intersection::Intersection;
 
     #[test]
     fn it_works() {
@@ -76,6 +77,7 @@ mod tests {
         assert_eq!(v3scaled.x,5*4);
     }
 }
+use crate::intersection::Intersection;
 
 extern crate euclid;
 use euclid::*;
@@ -86,15 +88,8 @@ pub struct Sphere{
     radius: f32,
 }
 
-impl Sphere{
-    pub fn new(x:f32,y:f32,z:f32,r:f32) -> Sphere {
-        Sphere{
-            center: Vector3D::new(x, y, z),
-            radius: r,
-        }
-    }
-
-    pub fn intersects(&self, origin: Vector3D<f32>, direction: Vector3D<f32>) -> Result<Vector3D<f32>,&str> {
+impl Intersection for Sphere {
+    fn intersects(&self, origin: Vector3D<f32>, direction: Vector3D<f32>) -> Result<Vector3D<f32>,&str> {
         //normalize the direction vector, i.e. make the magnitude = 1
         let direction = direction.normalize();
 
@@ -131,6 +126,15 @@ impl Sphere{
             }
 
             dbg!(Ok(intersection))
+        }
+    }
+}
+
+impl Sphere{
+    pub fn new(x:f32,y:f32,z:f32,r:f32) -> Sphere {
+        Sphere{
+            center: Vector3D::new(x, y, z),
+            radius: r,
         }
     }
 }
