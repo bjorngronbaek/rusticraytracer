@@ -19,7 +19,7 @@ mod tests {
         let sphere = super::Sphere::new(10.0, 10.0, 10.0, 2.0);
         let origin = Vector3D::new(0.0, 0.0, 0.0);
         let direction = Vector3D::new(-1.0,-1.0,-1.0);
-        assert_eq!(sphere.intersects(origin,direction).is_ok(),false);
+        assert_eq!(sphere.intersects(&origin,&direction).is_ok(),false);
     }    
 
     #[test]
@@ -27,7 +27,7 @@ mod tests {
         let sphere = super::Sphere::new(5.0, 1.0, 0.0, 2.0);
         let origin = Vector3D::new(0.0, 0.0, 0.0);
         let direction = Vector3D::new(1.0,0.0,0.0);
-        assert_eq!(sphere.intersects(origin,direction).is_ok(),true);
+        assert_eq!(sphere.intersects(&origin,&direction).is_ok(),true);
     }
 
     #[test]
@@ -35,7 +35,7 @@ mod tests {
         let sphere = super::Sphere::new(5.0, 0.0, 0.0, 2.0);
         let origin = Vector3D::new(0.0, 0.0, 0.0);
         let direction = Vector3D::new(1.0,0.0,0.0);
-        let intersection = sphere.intersects(origin,direction);
+        let intersection = sphere.intersects(&origin,&direction);
         assert_eq!(intersection.is_ok(),true);
         assert_eq!(intersection.unwrap(),Vector3D::new(3.0, 0.0, 0.0));
     }
@@ -45,7 +45,7 @@ mod tests {
         let sphere = super::Sphere::new(5.0, 0.0, 0.0, 2.0);
         let origin = Vector3D::new(0.0, 0.0, 0.0);
         let direction = Vector3D::new(5.0,0.0,0.0);
-        let intersection = sphere.intersects(origin,direction);
+        let intersection = sphere.intersects(&origin,&direction);
         assert_eq!(intersection.is_ok(),true);
         assert_eq!(intersection.unwrap(),Vector3D::new(3.0, 0.0, 0.0));
     }
@@ -55,7 +55,7 @@ mod tests {
         let sphere = super::Sphere::new(5.0, 1.0, 0.0, 2.0);
         let origin = Vector3D::new(0.0, 0.0, 0.0);
         let direction = Vector3D::new(1.0,0.0,0.0);
-        let intersection = sphere.intersects(origin,direction);
+        let intersection = sphere.intersects(&origin,&direction);
         assert_eq!(intersection.is_ok(),true);
         assert_eq!(intersection.unwrap().x.round(),3.0);
     }
@@ -65,7 +65,7 @@ mod tests {
         let sphere = super::Sphere::new(0.0, 5.0, 0.0, 2.0);
         let origin = Vector3D::new(0.0, 0.0, 0.0);
         let direction = Vector3D::new(0.0,1.0,0.0);
-        let intersection = sphere.intersects(origin,direction);
+        let intersection = sphere.intersects(&origin,&direction);
         assert_eq!(intersection.is_ok(),true);
         assert_eq!(intersection.unwrap(),Vector3D::new(0.0, 3.0, 0.0));
     }
@@ -77,28 +77,37 @@ mod tests {
         assert_eq!(v3scaled.x,5*4);
     }
 }
-use crate::intersection::Intersection;
+
+pub use crate::intersection::Intersection;
 
 extern crate euclid;
-use euclid::*;
+pub use euclid::Vector3D;
+
+#[derive(Debug)]
+enum Color {
+    Red,
+    Blue,
+    Green,
+}
 
 #[derive(Debug)]
 pub struct Sphere{
     center: Vector3D<f32>,
     radius: f32,
+    color: Color,
 }
 
 impl Intersection for Sphere {
-    fn intersects(&self, origin: Vector3D<f32>, direction: Vector3D<f32>) -> Result<Vector3D<f32>,&str> {
+    fn intersects(&self, origin: &Vector3D<f32>, direction: &Vector3D<f32>) -> Result<Vector3D<f32>,&str> {
         //normalize the direction vector, i.e. make the magnitude = 1
         let direction = direction.normalize();
 
         //vector v from the orgin p to the center c
-        let vpc = dbg!(self.center - origin); 
+        let vpc = self.center - *origin; 
 
         //the distance from the origin to the right angled line
         //intersection the center of the sphere
-        let t = dbg!(vpc.dot(direction));
+        let t = vpc.dot(direction);
 
         if t <= 0.0 {
             //if true, the origin is either inside the sphere, or directly
@@ -107,25 +116,25 @@ impl Intersection for Sphere {
         }        
         else {
             let intersection;
-            let pc = dbg!(direction * (vpc.dot(direction) / direction.square_length()));
-            let pc_length = dbg!( (self.center - pc).length() );
-            if dbg!(pc_length > self.radius) {
+            let pc = direction * (vpc.dot(direction) / direction.square_length());
+            let pc_length = (self.center - pc).length();
+            if pc_length > self.radius {
                 return Err("No intersection");
             }
             else{
                 let dist = (self.radius.powi(2) - (pc - self.center).length().powi(2)).sqrt();
                 let di1;
                 if vpc.length() > self.radius {
-                    di1 = dbg!((pc - origin).length() - dist);
+                    di1 = (pc - *origin).length() - dist;
                     
                 }
                 else {
-                    di1 = dbg!((pc - origin).length() + dist);
+                    di1 = (pc - *origin).length() + dist;
                 }
-                intersection = dbg!(origin + direction * di1);
+                intersection = *origin + direction * di1;
             }
 
-            dbg!(Ok(intersection))
+            Ok(intersection)
         }
     }
 }
@@ -135,6 +144,7 @@ impl Sphere{
         Sphere{
             center: Vector3D::new(x, y, z),
             radius: r,
+            color: Color::Red,
         }
     }
 }

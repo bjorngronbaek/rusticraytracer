@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 euclid = "0.19.5"
+image = "*"
