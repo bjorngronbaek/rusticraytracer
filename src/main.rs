@@ -27,7 +27,7 @@ fn main(){
 
             let r = Ray::new(origin,lower_left_corner.to_vector() + horizontal*u + vertical*v);
             //println!("({},{}:){:?}",i,j,r);
-            let col = color(r);
+            let col = color(&r);
             
             let ir = (255.99 * col.x) as u8;
             let ig = (255.99 * col.y) as u8;
@@ -41,13 +41,31 @@ fn main(){
     img.save("img.png").unwrap();
 }
 
-fn color(ray: Ray) -> Vector3D<f32> {
-    //if hit_sphere(center: Point3D<f32>, radius: f32, ray: Ray)
+fn color(ray: &Ray) -> Vector3D<f32> {
+    let t = hit_sphere(point3(0.0, 0.0, -1.0), 0.5, ray);
+    
+    if t > 0.0 {
+        let normal = (ray.point_at(t) - point3(0.0, 0.0,-1.0)).normalize();
+        return vec3(normal.x + 1.0, normal.y + 1.0, normal.z + 1.0) * 0.5; 
+    }
+    
     let unit_direction = ray.direction().normalize();
     let t = (unit_direction.y + 1.0) * 0.5;
     vec3(1.0, 1.0, 1.0) * (1.0-t) + vec3(0.5, 0.7, 1.0) * t
 }
 
-fn hit_sphere(center: Point3D<f32>, radius: f32, ray: Ray) -> bool {
-    false
+fn hit_sphere(center: Point3D<f32>, radius: f32, ray: &Ray) -> f32 {
+    let oc = ray.origin() - center;
+    let a = ray.direction().dot(ray.direction());
+    let b = 2.0 * oc.dot(ray.direction());
+    let c = oc.dot(oc) - radius * radius;
+    let discriminat = b*b - 4.0*a*c;
+
+    if discriminat < 0.0 {
+        return -1.0;
+    } 
+    else {
+        return (-b - f32::sqrt(discriminat) ) / (2.0 * a);
+    }
+    
 }

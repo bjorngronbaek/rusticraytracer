@@ -191,5 +191,9 @@ pub mod ray {
         pub fn direction(&self) -> Vector3D<f32> {
             self.b
         }
+
+        pub fn origin(&self) -> Point3D<f32> {
+            self.a
+        }
     }
 }
