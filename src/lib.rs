@@ -170,6 +170,7 @@ pub mod ray {
     use euclid::Vector3D;
     use euclid::Point3D;
 
+    #[derive(Debug)]    
     pub struct Ray{
         a: Point3D<f32>,
         b: Vector3D<f32>,
