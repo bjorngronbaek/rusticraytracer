@@ -152,3 +152,43 @@ impl World {
         imgbuf.save("ray.png").unwrap();
     }
 }
+
+pub mod ray {
+    mod tests {
+        use super::Ray;
+        use euclid::Vector3D;
+        use euclid::Point3D;
+
+        #[test]
+        pub fn test_simple_point_at(){
+            let ray = Ray::new(Point3D::new(0.0,0.0,0.0), Vector3D::new(1.0,0.0,0.0));
+            let p = ray.point_at(3.0);
+            assert_eq!(p,Point3D::new(3.0,0.0,0.0));
+        }
+    }
+
+    use euclid::Vector3D;
+    use euclid::Point3D;
+
+    pub struct Ray{
+        a: Point3D<f32>,
+        b: Vector3D<f32>,
+    }
+
+    impl Ray {
+        pub fn new(a: Point3D<f32>, b: Vector3D<f32>) -> Self {
+            Self {
+                a: a,
+                b: b,
+            } 
+        }
+
+        pub fn point_at(&self,t: f32) -> Point3D<f32> {
+            (self.a.to_vector() + self.b * t).to_point()
+        }
+
+        pub fn direction(&self) -> Vector3D<f32> {
+            self.b
+        }
+    }
+}

@@ -1,39 +1,47 @@
-use rustic_raytracer::sphere;
-use rustic_raytracer::World;
-
+extern crate euclid;
 use euclid::*;
 
 extern crate image;
+use image::{ImageBuffer,GenericImage};
+
+use rustic_raytracer::ray::*;
 
 fn main(){
-    //test_render();
-    test_euclid();
+    let nx = 200;
+    let ny = 100;
 
+    println!("P3\n{} {}\n255\n",nx,ny);
 
+    let lower_left_corner = Point3D::new(-2.0, -1.0, -1.0);
+    let horizontal = Vector3D::new(100.0, 0.0, 0.0);
+    let vertical = Vector3D::new(0.0, 100.0, 0.0);
+    let origin = Point3D::new(0.0,0.0,0.0);
+
+    let mut img = ImageBuffer::new(nx,ny);
+
+    for j in (0..ny).rev() {
+        for i in 0..nx {
+            //let col = (i as f32 / nx as f32, j as f32 / ny as f32, 0.2);
+            let u = i as f32 / nx as f32;
+            let v = j as f32 / ny as f32;
+
+            let r = Ray::new(origin,lower_left_corner.to_vector() + horizontal*u + vertical*v);
+            let col = color(r);
+            
+            let ir = (255.99 * col.x) as u8;
+            let ig = (255.99 * col.y) as u8;
+            let ib = (255.99 * col.z) as u8;
+
+            img.put_pixel(i , j, image::Rgb([ir,ig,ib]));
+            //println!("{},{}:({} {} {})",i,j,ir,ig,ib);
+        } 
+    }
+
+    img.save("img.png").unwrap();
 }
 
-fn test_render(){
-    let s = sphere::Sphere::new(0.0,0.0,-2.0,1.0);    
-    let mut w = World::new(3, 3);
-    w.add_object(s);
-    w.render();
-}
-
-fn test_euclid(){
-    pub struct ScreenSpace;
-    pub struct WorldSpace;
-
-    pub type WorldPoint = TypedPoint3D<f32,WorldSpace>;
-    pub type ScreenPoint  = TypedPoint2D<f32,ScreenSpace>;
-
-    pub type ProjectionMatrix = TypedTransform3D<f32,ScreenSpace,WorldSpace>;
-
-    let p3 = WorldPoint::new(10.0, 10.0, 10.0);
-    let p2 = ScreenPoint::new(10.0, 10.0);
-
-    //0.945519, 0, -0.325569, 0, -0.179534, 0.834209, -0.521403, 0, 0.271593, 0.551447, 0.78876, 0, 4.208271, 8.374532, 17.932925, 1)
-    let camera_transform = ProjectionMatrix::row_major_2d(1.0, 0.0, 0.0, -1.0, 0.0, 0.0);
-    //println!("3D transform: {:?}",camera_transform.transform_point3d(&p3));
-    println!("2D transform: {:?}",camera_transform.transform_point3d(&p3));
-
+fn color(ray: Ray) -> Vector3D<f32> {
+    let unit_direction = ray.direction().normalize();
+    let t = (unit_direction.y * 1.0) * 0.5;
+    vec3(1.0, 1.0, 1.0) * (1.0-t) + vec3(0.5, 0.7, 1.0) * t
 }
