@@ -139,6 +139,7 @@ pub mod sphere {
             let s1 = Sphere::new(5.0, 0.0, 0.0, 2.0);
             let s2 = Sphere::new(10.0, 0.0, 0.0, 2.0);
             objects.push(&s1);
+            objects.push(&s2);
 
             let p = Point3D::new(0.0,0.0,0.0);
             let direction = Vector3D::new(1.0, 0.0, 0.0);
@@ -149,6 +150,18 @@ pub mod sphere {
             assert_eq!(hit.unwrap().p, Point3D::new(3.0, 0.0, 0.0));
         }
 
+        #[test]
+        pub fn test_hit_from_inside(){
+            let s = Sphere::new(1.0, 0.0, 0.0, 2.0);
+            
+            let p = Point3D::new(0.0,0.0,0.0);
+            let direction = Vector3D::new(1.0, 0.0, 0.0);
+            let ray = Ray::new(p,direction);
+
+            let hit = s.hit(&ray, 0.0, 10.0);
+            assert!(hit.is_some());
+            assert_eq!(hit.unwrap().p, Point3D::new(3.0, 0.0, 0.0));
+        }
     }
 
     use crate::ray::Ray;
@@ -189,7 +202,7 @@ pub mod sphere {
                     return Option::Some(hit);
                 }
                 
-                let temp2 = (-b - f32::sqrt(b*b-a*c)) / a;
+                let temp2 = (-b + f32::sqrt(b*b-a*c)) / a;
                 if temp2 < t_max && temp2 > t_min {
                     let p = ray.point_at(temp2);
                     let normal = (p - self.center).normalize();
