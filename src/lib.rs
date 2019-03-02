@@ -107,6 +107,36 @@ pub mod ray {
     }
 }
 
+pub mod camera {
+    use super::ray::Point3D;
+    use super::ray::Vector3D;
+    use super::ray::Ray;
+
+    pub struct Camera {
+        lower_left_corner : Point3D<f32>,
+        horizontal : Vector3D<f32>,
+        vertical : Vector3D<f32>,
+        origin : Point3D<f32>,
+    }
+
+    impl Default for Camera {
+        fn default() -> Self {
+            Camera {
+                lower_left_corner : Point3D::new(-2.0, -1.0, -1.0),
+                horizontal : Vector3D::new(4.0, 0.0, 0.0),
+                vertical : Vector3D::new(0.0, 2.0, 0.0),
+                origin : Point3D::new(0.0,0.0,0.0),
+            }
+        }
+    }
+    
+    impl Camera {
+        pub fn get_ray(&self,u: f32, v: f32) -> Ray {
+            Ray::new(self.origin,self.lower_left_corner.to_vector() + self.horizontal*u + self.vertical*v)            
+        }   
+    }
+}
+
 pub mod sphere {
     #[cfg(test)]
     mod tests {
