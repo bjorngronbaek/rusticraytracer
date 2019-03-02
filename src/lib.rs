@@ -69,7 +69,6 @@ pub mod ray {
     }
 
     #[derive(Debug)]    
-    #[derive(PartialEq)]
     pub struct HitRecord {
         pub t: f32,
         pub p: Point3D<f32>,
@@ -152,9 +151,9 @@ pub mod sphere {
 
     }
 
-    pub use crate::ray::Ray;
+    use crate::ray::Ray;
     use crate::ray::Point3D;
-    pub use crate::ray::Hitable;
+    use crate::ray::Hitable;
     use crate::ray::HitRecord;
 
     #[derive(Debug)]
@@ -189,7 +188,6 @@ pub mod sphere {
 
                     return Option::Some(hit);
                 }
-
                 
                 let temp2 = (-b - f32::sqrt(b*b-a*c)) / a;
                 if temp2 < t_max && temp2 > t_min {
@@ -198,8 +196,7 @@ pub mod sphere {
                     let hit = HitRecord::new(temp2,p,normal);
 
                     return Option::Some(hit);
-                }
-               
+                }               
             }
 
             return Option::None;

@@ -1,11 +1,10 @@
 extern crate euclid;
-use euclid::*;
+use euclid::{Vector3D,Point3D};
 
 extern crate image;
 use image::{ImageBuffer};
 
-use rustic_raytracer::ray;
-use rustic_raytracer::sphere;
+use rustic_raytracer::{ray,sphere};
 
 fn main(){
     let nx = 200;
@@ -47,12 +46,12 @@ fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>) -> Vector3D<f32> {
     
     match hit {
         Some(h) => {
-            return vec3(h.normal.x + 1.0, h.normal.y + 1.0, h.normal.z + 1.0) * 0.5;     
+            return Vector3D::new(h.normal.x + 1.0, h.normal.y + 1.0, h.normal.z + 1.0) * 0.5;     
         }
         None => {
             let unit_direction = ray.direction().normalize();
             let t = (unit_direction.y + 1.0) * 0.5;
-            vec3(1.0, 1.0, 1.0) * (1.0-t) + vec3(0.5, 0.7, 1.0) * t
+            Vector3D::new(1.0, 1.0, 1.0) * (1.0-t) + Vector3D::new(0.5, 0.7, 1.0) * t
         }
     }    
 }
