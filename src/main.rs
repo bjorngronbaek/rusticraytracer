@@ -1,7 +1,7 @@
 use rand::Rng;
 
 extern crate euclid;
-use euclid::{Vector3D,Point3D};
+use euclid::{Vector3D};
 
 extern crate image;
 use image::{ImageBuffer};
@@ -32,7 +32,7 @@ fn main(){
         for i in 0..nx {
 
             let mut col: Vector3D<f32> = Vector3D::new(0.0,0.0,0.0);
-            for s in (0..ns){
+            for _s in 0..ns{
                 let ri: f32 = rng.gen();
                 let rj: f32 = rng.gen();
                 let u = (i as f32 + ri) / nx as f32;
