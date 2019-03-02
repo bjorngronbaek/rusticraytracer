@@ -27,7 +27,7 @@ pub mod ray {
             assert_eq!(p,Point3D::new(3.0,0.0,4.0));
         }
 
-           #[test]
+        #[test]
         pub fn test_point_at_on_two_dimensions_normalized(){
             let ray = Ray::new(Point3D::new(0.0,0.0,0.0), Vector3D::new(3.0,4.0,0.0));
             let p = ray.point_at(50.0);
@@ -35,7 +35,7 @@ pub mod ray {
             assert!(p.x.approx_eq_ulps(&30.0,2));
             assert!(p.y.approx_eq_ulps(&40.0,2));
             assert!(p.z.approx_eq_ulps(&0.0,2));
-        }
+        }        
     }
 
     pub use euclid::Vector3D;
@@ -68,6 +68,8 @@ pub mod ray {
         }
     }
 
+    #[derive(Debug)]    
+    #[derive(PartialEq)]
     pub struct HitRecord {
         pub t: f32,
         pub p: Point3D<f32>,
@@ -85,7 +87,24 @@ pub mod ray {
     }
 
     pub trait Hitable {
-        fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
+        fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
+    }
+
+    pub fn hitable(ray: &Ray, t_min: f32, t_max: f32, hitables: &Vec<&Hitable>) -> Option<HitRecord> {
+        let mut closest_so_far = t_max;
+        let mut hit_found: Option<HitRecord> = Option::None;
+
+        for object in hitables {
+            let hit = object.hit(ray, t_min, closest_so_far);
+            match hit {
+                Some(h) => {
+                    closest_so_far = h.t;
+                    hit_found = Option::Some(h);
+                },
+                None => {}
+            }
+        }
+        return hit_found;
     }
 }
 
@@ -99,6 +118,8 @@ pub mod sphere {
         use super::Hitable;
         use super::Ray;
 
+        use crate::ray::hitable;
+
         #[test]
         pub fn test_simple_hit() {
             let s = Sphere::new(5.0, 0.0, 0.0, 2.0);
@@ -107,8 +128,26 @@ pub mod sphere {
             let direction = Vector3D::new(1.0, 0.0, 0.0);
             let ray = Ray::new(p,direction);
 
-            let hit = s.hit(ray, -10.0, 10.0);
+            let hit = s.hit(&ray, -10.0, 10.0);
             assert!(hit.is_some());
+            assert_eq!(hit.unwrap().p, Point3D::new(3.0, 0.0, 0.0));
+        }
+
+        #[test]
+        pub fn test_simple_hitable_list(){
+            let mut objects: Vec<&Hitable> = Vec::new();
+            
+            let s1 = Sphere::new(5.0, 0.0, 0.0, 2.0);
+            let s2 = Sphere::new(10.0, 0.0, 0.0, 2.0);
+            objects.push(&s1);
+
+            let p = Point3D::new(0.0,0.0,0.0);
+            let direction = Vector3D::new(1.0, 0.0, 0.0);
+            let ray = Ray::new(p,direction);
+             
+            let hit = hitable(&ray,-10.0,100.0,&objects);
+            assert!(hit.is_some());
+            assert_eq!(hit.unwrap().p, Point3D::new(3.0, 0.0, 0.0));
         }
 
     }
@@ -134,10 +173,10 @@ pub mod sphere {
     }
 
     impl Hitable for Sphere {
-        fn hit(&self, ray: Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+        fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
             let oc = ray.origin() - self.center;
             let a = ray.direction().dot(ray.direction());
-            let b = 2.0 * oc.dot(ray.direction());
+            let b = oc.dot(ray.direction());
             let c = oc.dot(oc) - self.radius * self.radius;
             let discriminat = b*b - a*c;
 
