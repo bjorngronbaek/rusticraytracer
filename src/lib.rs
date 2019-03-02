@@ -1,154 +1,218 @@
-#[cfg(test)]
-mod tests {
-    use crate::sphere::Vector3D;
-    
-    #[test]
-    pub fn test_simple_straight_line_direction(){
-        let w = super::World::new(2, 2);
-        let d = w.get_direction(Vector3D::new(0.0, 0.0, 0.0),0.0,0.0);
-        assert_eq!(d, Vector3D::new(0.0, 0.0, -1.0));
-    }
-    
-    #[test]
-    pub fn test_simple_straight_line_direction_large(){
-        let w = super::World::new(300, 300);
-        let d = w.get_direction(Vector3D::new(0.0, 0.0, 0.0),0.0,0.0);
-        assert_eq!(d, Vector3D::new(0.0, 0.0, -1.0));
-    }
+pub mod ray {
+    #[cfg(test)]
+    mod tests {
+        use super::Ray;
+        use euclid::Vector3D;
+        use euclid::Point3D;
+        use float_cmp::ApproxEqUlps;
 
-    #[test]
-    pub fn test_simple_straight_line_direction_large_and_center(){
-        let w = super::World::new(300, 300);
-        let d = w.get_direction(Vector3D::new(150.0, 150.0, 0.0),150.0,150.0);
-        assert_eq!(d, Vector3D::new(0.0, 0.0, -1.0));
-    }
+        #[test]
+        pub fn test_simple_point_at(){
+            let ray = Ray::new(Point3D::new(0.0,0.0,0.0), Vector3D::new(1.0,0.0,0.0));
+            let p = ray.point_at(3.0);
+            assert_eq!(p,Point3D::new(3.0,0.0,0.0));
+        }
 
-    #[test]
-    pub fn test_center_and_center(){
-        let w = super::World::new(3, 3);
-        let d = w.get_direction(Vector3D::new(1.0, 1.0, 0.0),1.0,1.0);
-        assert_eq!(d.x,0.0);
-        assert_eq!(d.y,0.0);
-        assert_eq!(d.z,-1.0);
-    }
+        #[test]
+        pub fn test_simple_point_at_on_two_dimensions(){
+            let ray = Ray::new(Point3D::new(0.0,0.0,0.0), Vector3D::new(3.0,4.0,0.0));
+            let p = ray.point_at(5.0);
+            assert_eq!(p,Point3D::new(3.0,4.0,0.0));
+        }
 
-    #[test]
-    pub fn test_center_and_below(){
-        let w = super::World::new(3, 3);
-        let d = w.get_direction(Vector3D::new(1.0, 1.0, 0.0),1.0,0.0);
-        assert_eq!(d.x,0.0);    //direction in x stays the same
-        assert!(d.y < 0.0);     //direction in y < 0 since orgin is above point
-        assert!(d.z < 0.0);
+        #[test]
+        pub fn test_simple_point_at_on_two_dimensions_x_z(){
+            let ray = Ray::new(Point3D::new(0.0,0.0,0.0), Vector3D::new(3.0,0.0,4.0));
+            let p = ray.point_at(5.0);
+            assert_eq!(p,Point3D::new(3.0,0.0,4.0));
+        }
+
+        #[test]
+        pub fn test_point_at_on_two_dimensions_normalized(){
+            let ray = Ray::new(Point3D::new(0.0,0.0,0.0), Vector3D::new(3.0,4.0,0.0));
+            let p = ray.point_at(50.0);
+            //assert_eq!(p,Point3D::new(30.0,40.0,0.0)); floating precission comparison!!!
+            assert!(p.x.approx_eq_ulps(&30.0,2));
+            assert!(p.y.approx_eq_ulps(&40.0,2));
+            assert!(p.z.approx_eq_ulps(&0.0,2));
+        }        
     }
 
-    #[test]
-    pub fn test_left_and_aligned(){
-        let w = super::World::new(3, 3);
-        let d = w.get_direction(Vector3D::new(1.0, 1.0, 0.0),0.0,1.0);
-        assert!(d.x < 0.0);     //direction in x < 0 since orgin is to the left of the point
-        assert_eq!(d.y,0.0);    //direction in y stays the same since the origin is at the same height
-        assert!(d.z < 0.0);
+    pub use euclid::Vector3D;
+    pub use euclid::Point3D;
+
+    #[derive(Debug)]    
+    pub struct Ray{
+        a: Point3D<f32>,
+        b: Vector3D<f32>,
     }
 
-    #[test]
-    pub fn test_right_and_abowe(){
-        let w = super::World::new(3, 3);
-        let d = w.get_direction(Vector3D::new(1.0, 1.0, 0.0),2.0,2.0);
-        assert!(d.x > 0.0);
-        assert!(d.y > 0.0);
-        assert!(d.z < 0.0);
-    }
+    impl Ray {
+        pub fn new(a: Point3D<f32>, b: Vector3D<f32>) -> Self {
+            Self {
+                a: a,
+                b: b,
+            } 
+        }
 
-    #[test]
-    pub fn test_origin_of_plane() {
-        let w = super::World::new(3, 3);
-        let origin = w.get_plane_origin();
-        assert_eq!(origin.x,1.0);
-        assert_eq!(origin.y,1.0);
-        assert_eq!(origin.z,1.0);
-    }
+        pub fn point_at(&self,t: f32) -> Point3D<f32> {
+            (self.a + self.b.normalize() * t)
+        }
 
-}
+        pub fn direction(&self) -> Vector3D<f32> {
+            self.b
+        }
 
-pub mod intersection {
-    use euclid::Vector3D;
-
-    pub trait Intersection {
-        fn intersects(&self, origin: &Vector3D<f32>, direction: &Vector3D<f32>) -> Result<Vector3D<f32>,&str>;
-    }
-}
-
-pub mod sphere;
-use sphere::Vector3D;
-use sphere::Intersection;
-
-extern crate image;
-
-pub struct World {
-    height: i32,
-    width: i32,
-    objects: Vec<sphere::Sphere>,
-}
-
-impl World {
-    pub fn new(height: i32, width: i32) -> World {
-        World {
-            height: height,
-            width: width,
-            objects: Vec::new(),
+        pub fn origin(&self) -> Point3D<f32> {
+            self.a
         }
     }
 
-    pub fn add_object(&mut self, object: sphere::Sphere) {
-        self.objects.push(object);
+    #[derive(Debug)]    
+    pub struct HitRecord {
+        pub t: f32,
+        pub p: Point3D<f32>,
+        pub normal: Vector3D<f32>
     }
 
-    fn get_direction(&self,origin: Vector3D<f32>, x: f32, y: f32) -> Vector3D<f32> {
-        let d = Vector3D::new(x, y, -(self.width / 2) as f32) - origin;
-        d.normalize()
-    }
-
-    fn get_plane_origin(&self) -> Vector3D<f32> {
-        let x = self.height as f32 / 2.0;
-        let y = self.width as f32 / 2.0;
-        
-        Vector3D::new(x,y, 0.0)
-    }
-
-    pub fn render(&self) {
-        let mut imgbuf = image::ImageBuffer::from_fn(self.height as u32, self.width as u32, |x, y| {
-            if x % 2 == 0 {
-                image::Rgb([100,100,100])
-            } else {
-                image::Rgb([255,255,255])
+    impl HitRecord {
+        pub fn new(t1: f32, p1: Point3D<f32>, normal1: Vector3D<f32>) -> HitRecord {
+            HitRecord {
+                t: t1,
+                p: p1,
+                normal: normal1
             }
-        });
+        }
+    }
 
-        let origin: Vector3D<f32> = self.get_plane_origin();
+    pub trait Hitable {
+        fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
+    }
 
-        let objects = &self.objects[..];
-        for x in 0..self.height {
-            for y in 0..self.width {
-                let dir = self.get_direction(origin, x as f32, y as f32);
+    pub fn hitable(ray: &Ray, t_min: f32, t_max: f32, hitables: &Vec<&Hitable>) -> Option<HitRecord> {
+        let mut closest_so_far = t_max;
+        let mut hit_found: Option<HitRecord> = Option::None;
 
-                for object in objects {
-                    let intersection = object.intersects(&origin,&dir);
-                    match intersection {
-                        Ok(_) => 
-                        {
-                            //println!("({},{}):\t1",x,y);
-                            let pixel = imgbuf.get_pixel_mut(x as u32, y as u32);
-                            *pixel = image::Rgb([255,100,50]);
-                        },
-                        _ => 
-                        {
-                            //println!("({},{}):\t0",x,y)
-                        }, 
-                    }
+        for object in hitables {
+            let hit = object.hit(ray, t_min, closest_so_far);
+            match hit {
+                Some(h) => {
+                    closest_so_far = h.t;
+                    hit_found = Option::Some(h);
+                },
+                None => {}
+            }
+        }
+        return hit_found;
+    }
+}
+
+pub mod sphere {
+    #[cfg(test)]
+    mod tests {
+
+        use euclid::Vector3D;
+        use euclid::Point3D;
+        use super::Sphere;
+        use super::Hitable;
+        use super::Ray;
+
+        use crate::ray::hitable;
+
+        #[test]
+        pub fn test_simple_hit() {
+            let s = Sphere::new(5.0, 0.0, 0.0, 2.0);
+            
+            let p = Point3D::new(0.0,0.0,0.0);
+            let direction = Vector3D::new(1.0, 0.0, 0.0);
+            let ray = Ray::new(p,direction);
+
+            let hit = s.hit(&ray, -10.0, 10.0);
+            assert!(hit.is_some());
+            assert_eq!(hit.unwrap().p, Point3D::new(3.0, 0.0, 0.0));
+        }
+
+        #[test]
+        pub fn test_simple_hitable_list(){
+            let mut objects: Vec<&Hitable> = Vec::new();
+            
+            let s1 = Sphere::new(5.0, 0.0, 0.0, 2.0);
+            let s2 = Sphere::new(10.0, 0.0, 0.0, 2.0);
+            objects.push(&s1);
+            objects.push(&s2);
+
+            let p = Point3D::new(0.0,0.0,0.0);
+            let direction = Vector3D::new(1.0, 0.0, 0.0);
+            let ray = Ray::new(p,direction);
+             
+            let hit = hitable(&ray,-10.0,100.0,&objects);
+            assert!(hit.is_some());
+            assert_eq!(hit.unwrap().p, Point3D::new(3.0, 0.0, 0.0));
+        }
+
+        #[test]
+        pub fn test_hit_from_inside(){
+            let s = Sphere::new(1.0, 0.0, 0.0, 2.0);
+            
+            let p = Point3D::new(0.0,0.0,0.0);
+            let direction = Vector3D::new(1.0, 0.0, 0.0);
+            let ray = Ray::new(p,direction);
+
+            let hit = s.hit(&ray, 0.0, 10.0);
+            assert!(hit.is_some());
+            assert_eq!(hit.unwrap().p, Point3D::new(3.0, 0.0, 0.0));
+        }
+    }
+
+    use crate::ray::Ray;
+    use crate::ray::Point3D;
+    use crate::ray::Hitable;
+    use crate::ray::HitRecord;
+
+    #[derive(Debug)]
+    pub struct Sphere{
+        center: Point3D<f32>,
+        radius: f32,
+    }
+
+    impl Sphere{
+        pub fn new(x:f32,y:f32,z:f32,r:f32) -> Sphere {
+            Sphere{
+                center: Point3D::new(x, y, z),
+                radius: r,
+            }
+        }
+    }
+
+    impl Hitable for Sphere {
+        fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+            let oc = ray.origin() - self.center;
+            let a = ray.direction().dot(ray.direction());
+            let b = oc.dot(ray.direction());
+            let c = oc.dot(oc) - self.radius * self.radius;
+            let discriminat = b*b - a*c;
+
+            if discriminat > 0.0 {
+                let temp1 = (-b - f32::sqrt(b*b-a*c)) / a;
+                if temp1 < t_max && temp1 > t_min {
+                    let p = ray.point_at(temp1);
+                    let normal = (p - self.center).normalize();
+                    let hit = HitRecord::new(temp1,p,normal);
+
+                    return Option::Some(hit);
                 }
-            }
-        }
+                
+                let temp2 = (-b + f32::sqrt(b*b-a*c)) / a;
+                if temp2 < t_max && temp2 > t_min {
+                    let p = ray.point_at(temp2);
+                    let normal = (p - self.center).normalize();
+                    let hit = HitRecord::new(temp2,p,normal);
 
-        imgbuf.save("ray.png").unwrap();
+                    return Option::Some(hit);
+                }               
+            }
+
+            return Option::None;
+        }
     }
 }
