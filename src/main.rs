@@ -22,7 +22,7 @@ fn main(){
     let s1 = sphere::Sphere::new(0.0, 0.0, -1.0, 0.5);        
     objects.push(&s1);
 
-    let s2 = sphere::Sphere::new(0.5, 0.5, -1.0, 0.3);
+    let s2 = sphere::Sphere::new(-0.5, -0.5, -1.0, 0.3);
     objects.push(&s2);
     
     let s3 = sphere::Sphere::new(0.0, -100.5, -1.0, 100.0);
@@ -51,11 +51,13 @@ fn main(){
         } 
     }
 
-    img.save("img_aa.png").unwrap();
+    /* flip vertically to make the y-axis go up */
+    let flipped_img = image::imageops::flip_vertical(&img);
+    flipped_img.save("img_aa_fliped.png").unwrap();
 }
 
 fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>) -> Vector3D<f32> {
-    let hit = ray::hitable(ray,0.0,100.0,objects);
+    let hit = ray::hitable(ray,0.0,1000.0,objects);
     
     match hit {
         Some(h) => {

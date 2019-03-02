@@ -132,7 +132,7 @@ pub mod camera {
     
     impl Camera {
         pub fn get_ray(&self,u: f32, v: f32) -> Ray {
-            Ray::new(self.origin,self.lower_left_corner.to_vector() + self.horizontal*u + self.vertical*v)            
+            Ray::new(self.origin,self.lower_left_corner.to_vector() + self.horizontal*u + self.vertical*v - self.origin.to_vector())
         }   
     }
 }
