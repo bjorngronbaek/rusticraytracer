@@ -1,35 +1,48 @@
+use rand::Rng;
+
 extern crate euclid;
-use euclid::{Vector3D,Point3D};
+use euclid::{Vector3D};
 
 extern crate image;
 use image::{ImageBuffer};
 
-use rustic_raytracer::{ray,sphere};
+use rustic_raytracer::{ray,sphere,camera};
 
 fn main(){
     let nx = 200;
     let ny = 100;
+    let ns = 100;
 
     let mut img = ImageBuffer::new(nx,ny);
+    let mut rng = rand::thread_rng();
 
-    let lower_left_corner = Point3D::new(-2.0, -1.0, -1.0);
-    let horizontal = Vector3D::new(4.0, 0.0, 0.0);
-    let vertical = Vector3D::new(0.0, 2.0, 0.0);
-    let origin = Point3D::new(0.0,0.0,0.0);
+    let camera = camera::Camera::default();
 
-    let s1 = sphere::Sphere::new(0.0, 0.0, -1.0, 0.5);
-    let s2 = sphere::Sphere::new(0.0, 1.0, -1.0, 0.5);
-    let s3 = sphere::Sphere::new(0.0, -100.5, 1.0, 100.0);
-    let objects: Vec<&ray::Hitable> = vec![&s1,&s2,&s3];
+    let mut objects: Vec<&ray::Hitable> = Vec::new();
+    let s1 = sphere::Sphere::new(0.0, 0.0, -1.0, 0.5);        
+    objects.push(&s1);
+
+    let s2 = sphere::Sphere::new(0.5, 0.5, -1.0, 0.3);
+    objects.push(&s2);
+    
+    let s3 = sphere::Sphere::new(0.0, -100.5, -1.0, 100.0);
+    objects.push(&s3);
 
     for j in (0..ny).rev() {
         for i in 0..nx {
-            let u = i as f32 / nx as f32;
-            let v = j as f32 / ny as f32;
 
-            let r = ray::Ray::new(origin,lower_left_corner.to_vector() + horizontal*u + vertical*v);
-            
-            let col = color(&r,&objects);            
+            let mut col: Vector3D<f32> = Vector3D::new(0.0,0.0,0.0);
+            for _s in 0..ns{
+                let ri: f32 = rng.gen();
+                let rj: f32 = rng.gen();
+                let u = (i as f32 + ri) / nx as f32;
+                let v = (j as f32 + rj) / ny as f32;
+
+                let r = camera.get_ray(u, v);
+                col += color(&r,&objects);       
+            }
+            col = col / ns as f32;
+                 
             let ir = (255.99 * col.x) as u8;
             let ig = (255.99 * col.y) as u8;
             let ib = (255.99 * col.z) as u8;
@@ -38,7 +51,7 @@ fn main(){
         } 
     }
 
-    img.save("img.png").unwrap();
+    img.save("img_aa.png").unwrap();
 }
 
 fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>) -> Vector3D<f32> {
