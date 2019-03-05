@@ -6,12 +6,17 @@ use euclid::{Vector3D};
 extern crate image;
 use image::{ImageBuffer};
 
-use rustic_raytracer::{ray,sphere,camera};
+use rustic_raytracer::{ray,sphere,camera,light};
+
+use noise::{NoiseFn, Perlin};
+use std::f32;
+
+pub use euclid::Point3D;
 
 fn main(){
-    let nx = 200;
-    let ny = 100;
-    let ns = 100;
+    let nx = 800;
+    let ny = 600;
+    let ns = 2;
 
     let mut img = ImageBuffer::new(nx,ny);
     let mut rng = rand::thread_rng();
@@ -19,6 +24,8 @@ fn main(){
     let camera = camera::Camera::default();
 
     let mut objects: Vec<&ray::Hitable> = Vec::new();
+    let mut lights: Vec<&light::Light> = Vec::new();
+
     let s1 = sphere::Sphere::new(0.0, 0.0, -1.0, 0.5);        
     objects.push(&s1);
 
@@ -27,6 +34,20 @@ fn main(){
     
     let s3 = sphere::Sphere::new(0.0, -100.5, -1.0, 100.0);
     objects.push(&s3);
+
+    //let PI2 = 2.0*f32::consts::PI;
+
+    //let light1 = light::Light::new(0.0, -200.0, -1.0, 100.0);
+    //lights.push(&light1);
+
+    //let light2 = light::Light::new(0.0, 200.0, -1.0, 100.0);
+    //lights.push(&light2);
+
+    let light3 = light::Light::new(100.0, 200.0, 1.0, 100.0);
+    lights.push(&light3);
+
+    let perlin = Perlin::new();
+    
 
     for j in (0..ny).rev() {
         for i in 0..nx {
@@ -39,7 +60,7 @@ fn main(){
                 let v = (j as f32 + rj) / ny as f32;
 
                 let r = camera.get_ray(u, v);
-                col += color(&r,&objects);       
+                col += color(&r,&objects,&lights, perlin);       
             }
             col = col / ns as f32;
                  
@@ -56,12 +77,33 @@ fn main(){
     flipped_img.save("img_aa_fliped.png").unwrap();
 }
 
-fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>) -> Vector3D<f32> {
-    let hit = ray::hitable(ray,0.0,1000.0,objects);
+fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>, lights: &Vec<&light::Light>, texture: Perlin) -> Vector3D<f32> {
+
+    let hit = ray::hitable(ray, 0.0, 1000.0, objects);
     
     match hit {
         Some(h) => {
-            return Vector3D::new(h.normal.x + 1.0, h.normal.y + 1.0, h.normal.z + 1.0) * 0.5;     
+
+            let hit : Point3D<f32> = h.p;
+            let tex = texture.get([hit.x as f64, hit.y as f64, hit.z as f64]) as f32;
+            let mut color: Vector3D<f32> = Vector3D::new(0.0, 0.0, 0.0);
+            let light_fraction: f32 = 1.0/(lights.len() as f32);
+            for light in lights {
+                let search_direction : Vector3D<f32> = light.position - hit;
+                let shadow = ray::Ray::new(hit, search_direction);
+                let block = ray::hitable(&shadow, 0.0, 1000.0, objects);
+                match block {
+                    Some(_b) => {
+                        //color = color + Vector3D::new(1.0, 0.0, 0.0)*light_fraction; 
+                    }
+                    None => {
+                        //color = color + Vector3D::new(1.0, 0.0, 0.0)*light_fraction;
+                        color = color + Vector3D::new(tex, tex, (1.0 + tex)/2.0)*light_fraction;  
+                        //return Vector3D::new(h.normal.x + 1.0, h.normal.y + 1.0, h.normal.z + 1.0) * 0.5; 
+                    }
+                }
+            }
+            return color;     
         }
         None => {
             let unit_direction = ray.direction().normalize();

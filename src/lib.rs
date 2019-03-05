@@ -1,4 +1,8 @@
 pub mod ray {
+
+    extern crate image;
+    use image::{ImageBuffer};
+
     #[cfg(test)]
     mod tests {
         use super::Ray;
@@ -104,6 +108,26 @@ pub mod ray {
             }
         }
         return hit_found;
+    }
+}
+
+pub mod light{
+    use super::ray::Point3D;
+
+    #[derive(Debug)]
+    pub struct Light{
+        pub position : Point3D<f32>,
+        pub intensity : f32,
+        //color : image::color<u8>,
+    }
+
+    impl Light{
+        pub fn new(x:f32,y:f32,z:f32,i:f32) -> Light {
+            Light{
+                position: Point3D::new(x, y, z),
+                intensity: i,
+            }
+        }
     }
 }
 
