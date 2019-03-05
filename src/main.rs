@@ -16,8 +16,8 @@ pub use euclid::Point3D;
 fn main(){
     let nx = 600;
     let ny = 600;
-    let ns = 10;
-    let light_radius = 500.0;
+    let ns = 1;
+    let light_radius = 100.0;
     let light_samples = 1;
 
     let mut img = ImageBuffer::new(nx,ny);
@@ -97,7 +97,6 @@ fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>, lights: &Vec<light::Light
 
             let hit : Point3D<f32> = h.p;
             let tex = texture.get([hit.x as f64, hit.y as f64, hit.z as f64]) as f32;
-            let mut color: Vector3D<f32> = Vector3D::new(0.0, 0.0, 0.0);
             let light_fraction: f32 = 1.0/(lights.len() as f32);
             let mut total_light = 0.0;
             for light in lights {
@@ -118,9 +117,7 @@ fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>, lights: &Vec<light::Light
                 }
             }
 
-            color = Vector3D::new(tex, tex, tex) * total_light;
-
-            return color;     
+            return Vector3D::new(tex, tex, tex) * (10.0*total_light).log(5.00);     
         }
         None => {
             let unit_direction = ray.direction().normalize();
