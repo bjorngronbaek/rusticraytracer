@@ -148,7 +148,7 @@ pub mod camera {
             Camera {
                 lower_left_corner : Point3D::new(-2.0, -1.0, -1.0),
                 horizontal : Vector3D::new(4.0, 0.0, 0.0),
-                vertical : Vector3D::new(0.0, 2.0, 0.0),
+                vertical : Vector3D::new(0.0, 4.0, 0.0),
                 origin : Point3D::new(0.0,0.0,0.0),
             }
         }
@@ -156,7 +156,7 @@ pub mod camera {
     
     impl Camera {
         pub fn get_ray(&self,u: f32, v: f32) -> Ray {
-            Ray::new(self.origin,self.lower_left_corner.to_vector() + self.horizontal*u + self.vertical*v - self.origin.to_vector())
+            Ray::new(self.origin, self.lower_left_corner.to_vector() + self.horizontal*u + self.vertical*v - self.origin.to_vector())
         }   
     }
 }
