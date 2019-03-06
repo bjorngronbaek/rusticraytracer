@@ -14,11 +14,12 @@ use std::f32;
 pub use euclid::Point3D;
 
 fn main(){
+
     let nx = 600;
     let ny = 600;
     let ns = 1;
-    let light_radius = 100.0;
-    let light_samples = 1;
+    let light_radius = 50.0;
+    let light_samples = 500;
 
     let mut img = ImageBuffer::new(nx,ny);
     let mut rng = rand::thread_rng();
@@ -28,7 +29,7 @@ fn main(){
     let mut objects: Vec<&ray::Hitable> = Vec::new();
     let mut lights: Vec<light::Light> = Vec::new();
 
-    let s1 = sphere::Sphere::new(0.0, 0.0, -1.0, 0.5);        
+    let s1 = sphere::Sphere::new(0.0, 0.250, -1.0, 0.5);        
     objects.push(&s1);
 
     //let s2 = sphere::Sphere::new(-0.5, -0.5, -1.0, 0.3);
@@ -71,10 +72,12 @@ fn main(){
                 let v = (j as f32 + rj) / ny as f32;
 
                 let r = camera.get_ray(u, v);
-                col += color(&r,&objects,&lights, perlin);       
+                col += color(&r, &objects, &lights, perlin);       
             }
             col = col / ns as f32;
                  
+            //println!("      Color: {},{},{}", col.x, col.y, col.z);
+
             let ir = (255.99 * col.x) as u8;
             let ig = (255.99 * col.y) as u8;
             let ib = (255.99 * col.z) as u8;
@@ -96,28 +99,31 @@ fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>, lights: &Vec<light::Light
         Some(h) => {
 
             let hit : Point3D<f32> = h.p;
-            let tex = texture.get([hit.x as f64, hit.y as f64, hit.z as f64]) as f32;
-            let light_fraction: f32 = 1.0/(lights.len() as f32);
+            let mut color;
+            let tex = (1.0 + texture.get([hit.x as f64, hit.y as f64, hit.z as f64])/2.0) as f32;
+
+                color = Vector3D::new(tex, tex, tex);
+            
+            //let tex = 1.0;
             let mut total_light = 0.0;
             for light in lights {
                 let search_direction : Vector3D<f32> = light.position - hit;
                 let shadow = ray::Ray::new(hit, search_direction);
-                let block = ray::hitable(&shadow, 0.0, 1000.0, objects);
+                let block = ray::hitable(&shadow, 0.0, 10000.0, objects);
                 match block {
                     Some(_b) => {
-                        //color = color + Vector3D::new(tex, tex, (1.0 + tex)/2.0)*light_fraction*light_fraction;
-                        //color = color + Vector3D::new(1.0, 0.0, 0.0)*light_fraction; 
+                        //Enable for shadow test
+                        //color = Vector3D::new(1.0, 0.0, 0.0);
                     }
                     None =>{ 
-                        total_light += light_fraction;
-                        //color = color + Vector3D::new(1.0, 0.0, 0.0)*light_fraction;
-                        //color = color + Vector3D::new(tex, tex, (1.0 + tex)/2.0)*light_fraction;  
-                        //return Vector3D::new(h.normal.x + 1.0, h.normal.y + 1.0, h.normal.z + 1.0) * 0.5; 
+                        total_light += light.intensity/search_direction.square_length();
                     }
                 }
             }
 
-            return Vector3D::new(tex, tex, tex) * (10.0*total_light).log(5.00);     
+            //println!("Light: {}", tex);
+
+            return color * (1.0 + total_light).log(10.00);     
         }
         None => {
             let unit_direction = ray.direction().normalize();
