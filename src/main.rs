@@ -99,10 +99,8 @@ fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>, lights: &Vec<light::Light
         Some(h) => {
 
             let hit : Point3D<f32> = h.p;
-            let mut color;
             let tex = (1.0 + texture.get([hit.x as f64, hit.y as f64, hit.z as f64])/2.0) as f32;
-
-                color = Vector3D::new(tex, tex, tex);
+            let color = Vector3D::new(tex, tex, tex);                
             
             //let tex = 1.0;
             let mut total_light = 0.0;

@@ -1,8 +1,5 @@
 pub mod ray {
 
-    extern crate image;
-    use image::{ImageBuffer};
-
     #[cfg(test)]
     mod tests {
         use super::Ray;
