@@ -1,153 +1,148 @@
-use rand::Rng;
+pub mod raytracer {
+    extern crate euclid;
+    extern crate image;
 
-extern crate euclid;
-use euclid::{Vector3D};
+    use crate::{ray,sphere,camera,light};
 
-extern crate image;
-use image::{ImageBuffer};
+    use euclid::{Vector3D,Point3D};
+    use image::{ImageBuffer};
+    use noise::{NoiseFn, Perlin};
+    use std::f32;
+    use rand::Rng;
+    use std::cell::RefCell;
 
-use noise::{NoiseFn, Perlin};
-use std::f32;
-
-pub use euclid::Point3D;
-use std::cell::RefCell;
-
-pub struct World<'a> {
-    world_width: u32,
-    world_height: u32,
-    aa_runs: u32,
-    objects: RefCell<Vec<&'a ray::Hitable>>,
-}
-
-impl<'a> World<'a>{
-
-    pub fn default() -> Self {
-        World {
-            world_width: 600,
-            world_height: 600,
-            aa_runs: 1,
-            objects: RefCell::new(Vec::new()),
-        }
+    pub struct World<'a> {
+        world_width: u32,
+        world_height: u32,
+        aa_runs: u32,
+        objects: RefCell<Vec<&'a ray::Hitable>>,
     }
 
-    pub fn add_hitable(&self,hitable: &'a ray::Hitable){
-        self.objects.borrow_mut().push(hitable);
-    }
-}
-
-pub fn run(){
-    let world = World::default();
-
-    let s1 = sphere::Sphere::new(0.0, 0.50, -1.0, 0.5);
-    world.objects.borrow_mut().push(&s1);
-    //default_objects.push(&s1);
-
-    //let s2 = sphere::Sphere::new(-0.5, -0.5, -1.0, 0.3);
-    //default_objects.push(&s2);
-
-    let s3 = sphere::Sphere::new(0.0, -100.5, -1.0, 100.0);
-    world.objects.borrow_mut().push(&s3);
-    //default_objects.push(&s3);
-
-    render(&world);
-}
-
-pub fn render(world: &World){
-
-    let nx = world.world_width;
-    let ny = world.world_height;
-    let ns = world.aa_runs;
-
-    let light_radius = 50.0;
-    let light_samples = 500;
-
-    let mut img = ImageBuffer::new(nx,ny);
-    let mut rng = rand::thread_rng();
-
-    let camera = camera::Camera::default();
-
-    let mut lights: Vec<light::Light> = Vec::new();
-
-    let pi2 = 2.0*f32::consts::PI;
-    let mut t:f32 = 0.0;
-    let mut spiral:f32 = 0.0;
-
-    for _i in 0..light_samples{
-        let light = light::Light::new((light_radius-spiral)*t.cos(), 100.0, (light_radius-spiral)*t.sin(), 100.0);
-        lights.push(light);
-        t = t + 3.0*pi2/light_samples as f32;
-        spiral = spiral + 0.5*light_radius/light_samples as f32;
-    }
-
-    let perlin = Perlin::new();
-
-    for j in (0..ny).rev() {
-        for i in 0..nx {
-            let mut col: Vector3D<f32> = Vector3D::new(0.0,0.0,0.0);
-            for _s in 0..ns{
-                let ri: f32 = rng.gen();
-                let rj: f32 = rng.gen();
-                let u = (i as f32 + ri) / nx as f32;
-                let v = (j as f32 + rj) / ny as f32;
-
-                let r = camera.get_ray(u, v);
-                col += color(&r, &world.objects.borrow(), &lights, perlin);
+    impl<'a> World<'a> {
+        pub fn default() -> Self {
+            World {
+                world_width: 600,
+                world_height: 600,
+                aa_runs: 1,
+                objects: RefCell::new(Vec::new()),
             }
-            col = col / ns as f32;
+        }
 
-            let ir = (255.99 * col.x) as u8;
-            let ig = (255.99 * col.y) as u8;
-            let ib = (255.99 * col.z) as u8;
-
-            img.put_pixel(i , j, image::Rgb([ir,ig,ib]));
+        pub fn add_hitable(&self, hitable: &'a ray::Hitable) {
+            self.objects.borrow_mut().push(hitable);
         }
     }
 
-    /* flip vertically to make the y-axis go up */
-    let flipped_img = image::imageops::flip_vertical(&img);
-    flipped_img.save("img_aa_fliped.png").unwrap();
-}
+    pub fn run() {
+        let world = World::default();
 
-fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>, lights: &Vec<light::Light>, texture: Perlin) -> Vector3D<f32> {
+        let s1 = sphere::Sphere::new(0.0, 0.50, -1.0, 0.5);
+        world.objects.borrow_mut().push(&s1);
+        //default_objects.push(&s1);
 
-    let hit = ray::hitable(ray, 0.0, 1000.0, objects);
+        //let s2 = sphere::Sphere::new(-0.5, -0.5, -1.0, 0.3);
+        //default_objects.push(&s2);
 
-    match hit {
-        Some(h) => {
+        let s3 = sphere::Sphere::new(0.0, -100.5, -1.0, 100.0);
+        world.objects.borrow_mut().push(&s3);
+        //default_objects.push(&s3);
 
-            let hit : Point3D<f32> = h.p;
-            let tex = (1.0 + texture.get([hit.x as f64, hit.y as f64, hit.z as f64])/2.0) as f32;
-            let color = Vector3D::new(tex, tex, tex);
+        render(&world);
+    }
 
-            //let tex = 1.0;
-            let mut total_light = 0.0;
-            for light in lights {
-                let search_direction : Vector3D<f32> = light.position - hit;
-                let shadow = ray::Ray::new(hit, search_direction);
-                let block = ray::hitable(&shadow, 0.0, 10000.0, objects);
-                match block {
-                    Some(_b) => {
-                        //Enable for shadow test
-                        //color = Vector3D::new(1.0, 0.0, 0.0);
-                    }
-                    None =>{
-                        total_light += light.intensity/search_direction.square_length();
+    pub fn render(world: &World) {
+        let nx = world.world_width;
+        let ny = world.world_height;
+        let ns = world.aa_runs;
+
+        let light_radius = 50.0;
+        let light_samples = 500;
+
+        let mut img = ImageBuffer::new(nx, ny);
+        let mut rng = rand::thread_rng();
+
+        let camera = camera::Camera::default();
+
+        let mut lights: Vec<light::Light> = Vec::new();
+
+        let pi2 = 2.0 * f32::consts::PI;
+        let mut t: f32 = 0.0;
+        let mut spiral: f32 = 0.0;
+
+        for _i in 0..light_samples {
+            let light = light::Light::new((light_radius - spiral) * t.cos(), 100.0, (light_radius - spiral) * t.sin(), 100.0);
+            lights.push(light);
+            t = t + 3.0 * pi2 / light_samples as f32;
+            spiral = spiral + 0.5 * light_radius / light_samples as f32;
+        }
+
+        let perlin = Perlin::new();
+
+        for j in (0..ny).rev() {
+            for i in 0..nx {
+                let mut col: Vector3D<f32> = Vector3D::new(0.0, 0.0, 0.0);
+                for _s in 0..ns {
+                    let ri: f32 = rng.gen();
+                    let rj: f32 = rng.gen();
+                    let u = (i as f32 + ri) / nx as f32;
+                    let v = (j as f32 + rj) / ny as f32;
+
+                    let r = camera.get_ray(u, v);
+                    col += color(&r, &world.objects.borrow(), &lights, perlin);
+                }
+                col = col / ns as f32;
+
+                let ir = (255.99 * col.x) as u8;
+                let ig = (255.99 * col.y) as u8;
+                let ib = (255.99 * col.z) as u8;
+
+                img.put_pixel(i, j, image::Rgb([ir, ig, ib]));
+            }
+        }
+
+        /* flip vertically to make the y-axis go up */
+        let flipped_img = image::imageops::flip_vertical(&img);
+        flipped_img.save("img_aa_fliped.png").unwrap();
+    }
+
+    fn color(ray: &ray::Ray, objects: &Vec<&ray::Hitable>, lights: &Vec<light::Light>, texture: Perlin) -> Vector3D<f32> {
+        let hit = ray::hitable(ray, 0.0, 1000.0, objects);
+
+        match hit {
+            Some(h) => {
+                let hit: Point3D<f32> = h.p;
+                let tex = (1.0 + texture.get([hit.x as f64, hit.y as f64, hit.z as f64]) / 2.0) as f32;
+                let color = Vector3D::new(tex, tex, tex);
+
+                //let tex = 1.0;
+                let mut total_light = 0.0;
+                for light in lights {
+                    let search_direction: Vector3D<f32> = light.position - hit;
+                    let shadow = ray::Ray::new(hit, search_direction);
+                    let block = ray::hitable(&shadow, 0.0, 10000.0, objects);
+                    match block {
+                        Some(_b) => {
+                            //Enable for shadow test
+                            //color = Vector3D::new(1.0, 0.0, 0.0);
+                        }
+                        None => {
+                            total_light += light.intensity / search_direction.square_length();
+                        }
                     }
                 }
+
+                //println!("Light: {}", tex);
+
+                return color * (1.0 + total_light).log(10.00);
             }
-
-            //println!("Light: {}", tex);
-
-            return color * (1.0 + total_light).log(10.00);
-        }
-        None => {
-            let unit_direction = ray.direction().normalize();
-            let t = (unit_direction.y + 1.0) * 0.5;
-            Vector3D::new(1.0, 1.0, 1.0) * (1.0-t) + Vector3D::new(0.5, 0.7, 1.0) * t
+            None => {
+                let unit_direction = ray.direction().normalize();
+                let t = (unit_direction.y + 1.0) * 0.5;
+                Vector3D::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3D::new(0.5, 0.7, 1.0) * t
+            }
         }
     }
 }
-
 
 pub mod ray {
 
